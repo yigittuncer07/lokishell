@@ -99,6 +99,10 @@ int main()
         isBackroudProcess = 0;
         setup(inputBuffer, args, &isBackroudProcess);
 
+        if (!strcmp(args[0], "exit")) {
+            exit(3);
+        }
+        
         /** the steps are:
         (1) fork a child process using fork()
         (2) the child process will invoke execv()
@@ -132,12 +136,13 @@ int main()
             else
             {
 
-                if (wait())
+                if (waitpid(fork_pid, &status, 0) > 0)
                 {
+                    printf("\tHEROSLOG INFO:\tForeground process %d exited normally.\n", fork_pid);
                 }
                 else
                 {
-                    // printf("\tHEROSLOG INFO:\tChild process did not exit normally.\n");
+                    printf("\tHEROSLOG INFO:\tForeground process %d did not exit normally.\n", fork_pid);
                 }
             }
         }
@@ -150,10 +155,14 @@ int main()
             if (isBackroudProcess)
             {
                 argCount--;
+                args[argCount] = NULL;
+                // Redirect standard input, output, and error to /dev/null
+                freopen("/dev/null", "r", stdin);
+                freopen("/dev/null", "w", stdout);
+                freopen("/dev/null", "w", stderr);
             }
 
             // ping -c 5 google.com
-
 
             execv(fullPath, args);
 
