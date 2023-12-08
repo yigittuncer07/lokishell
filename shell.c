@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/types.h>
 
 #define MAX_LINE 80
+
+int argCount;
 
 // Calls exit if ctrl-D is entered
 // Reads args
@@ -12,6 +15,12 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
     int i;      // loop index for accessing inputBuffer array
     int start;  // index where beginning of next command parameter is
     int ct = 0; // index of where to place the next parameter into args[]
+
+    // Use ANSI escape code to set text color to green
+    printf("\033[0;32m"); // 0;32 represents green
+    printf("heroshell: ");
+    printf("\033[0m"); // Resets color
+    fflush(stdout);
 
     length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
 
@@ -35,10 +44,9 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
         exit(-1); /* terminate with error code of -1 */
     }
 
-    printf(">>%s<<", inputBuffer);
+    // printf(">>%s<<", inputBuffer);
     for (i = 0; i < length; i++)
     { /* examine every character in the inputBuffer */
-
         switch (inputBuffer[i])
         {
         case ' ':
@@ -73,23 +81,23 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
         }            /* end of switch */
     }                /* end of for */
     args[ct] = NULL; /* just in case the input line was > 80 */
-
-    for (i = 0; i <= ct; i++)
-        printf("args %d = %s\n", i, args[i]);
+    argCount = ct;
+    // for (i = 0; i <= ct; i++)
+    // printf("args %d = %s\n", i, args[i]);
 } /* end of setup routine */
 
-int main(void)
+int main()
 {
-
     char inputBuffer[MAX_LINE];
     short isBackroudProcess; // equals 1 if a command is followed by &
     char *args[MAX_LINE / 2 + 1];
+    int status;
 
     while (1)
     {
         isBackroudProcess = 0;
-        printf("heroshell: ");
         setup(inputBuffer, args, &isBackroudProcess);
+        printf("background process is : %d and argCount is %d\n", isBackroudProcess, argCount);
 
         /** the steps are:
         (1) fork a child process using fork()
@@ -105,14 +113,50 @@ int main(void)
             return 1;
         }
 
-        // This is the parent process
         if (fork_pid)
         {
-            printf("fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+            // This is the parent process
+            printf("\tHEROSLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+            if (isBackroudProcess)
+            {
+                printf("\tHEROSLOG INFO:\tBackground process initiated");
+                // Should not wait and instantly prompt
+            }
+            else
+            {
+
+                if (wait())
+                {
+                }
+                else
+                {
+                    printf("\tHEROSLOG INFO:\tChild process did not exit normally.\n");
+                }
+            }
         }
-        else //This is the child process
+        else
         {
-            printf("fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+            // This is the child process
+
+            printf("\tHEROSLOG INFO:\tCHILD PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+
+            if (isBackroudProcess)
+            {
+                argCount--;
+            }
+
+            // ping -c 5 google.com
+
+
+            printf("breakpoint1\n");
+
+            execv("/bin/ping", args);
+
+            printf("breakpoint2\n");
+
+            perror("execv");
+
+            printf("\tHEROSLOG INFO:\child process terminated .In child process\n");
         }
     }
     return 0;
