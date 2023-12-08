@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <string.h>
 
 #define MAX_LINE 80
 
@@ -97,7 +98,6 @@ int main()
     {
         isBackroudProcess = 0;
         setup(inputBuffer, args, &isBackroudProcess);
-        printf("background process is : %d and argCount is %d\n", isBackroudProcess, argCount);
 
         /** the steps are:
         (1) fork a child process using fork()
@@ -106,6 +106,13 @@ int main()
         otherwise it will invoke the setup() function again. */
 
         // Fork a child process
+
+        char fullPath[255];
+
+        strcpy(fullPath, "/bin/");
+        strcat(fullPath, args[0]);
+        // printf("%s", pathString);
+
         int fork_pid = fork();
         if (fork_pid == -1)
         {
@@ -116,10 +123,10 @@ int main()
         if (fork_pid)
         {
             // This is the parent process
-            printf("\tHEROSLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+            // printf("\tHEROSLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
             if (isBackroudProcess)
             {
-                printf("\tHEROSLOG INFO:\tBackground process initiated");
+                // printf("\tHEROSLOG INFO:\tBackground process initiated");
                 // Should not wait and instantly prompt
             }
             else
@@ -130,7 +137,7 @@ int main()
                 }
                 else
                 {
-                    printf("\tHEROSLOG INFO:\tChild process did not exit normally.\n");
+                    // printf("\tHEROSLOG INFO:\tChild process did not exit normally.\n");
                 }
             }
         }
@@ -138,7 +145,7 @@ int main()
         {
             // This is the child process
 
-            printf("\tHEROSLOG INFO:\tCHILD PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+            // printf("\tHEROSLOG INFO:\tCHILD PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
 
             if (isBackroudProcess)
             {
@@ -148,15 +155,11 @@ int main()
             // ping -c 5 google.com
 
 
-            printf("breakpoint1\n");
-
-            execv("/bin/ping", args);
-
-            printf("breakpoint2\n");
+            execv(fullPath, args);
 
             perror("execv");
 
-            printf("\tHEROSLOG INFO:\child process terminated .In child process\n");
+            // printf("\tHEROSLOG INFO:\child process terminated .In child process\n");
         }
     }
     return 0;
