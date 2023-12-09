@@ -99,10 +99,11 @@ int main()
         isBackroudProcess = 0;
         setup(inputBuffer, args, &isBackroudProcess);
 
-        if (!strcmp(args[0], "exit")) {
+        if (!strcmp(args[0], "exit"))
+        {
             exit(3);
         }
-        
+
         /** the steps are:
         (1) fork a child process using fork()
         (2) the child process will invoke execv()
@@ -120,14 +121,14 @@ int main()
         int fork_pid = fork();
         if (fork_pid == -1)
         {
-            printf("Error while creating child process!");
+            printf("\tHEROSLOG ERROR:\tError while creating child process!");
             return 1;
         }
 
         if (fork_pid)
         {
             // This is the parent process
-            // printf("\tHEROSLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+            printf("\tHEROSLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
             if (isBackroudProcess)
             {
                 // printf("\tHEROSLOG INFO:\tBackground process initiated");
@@ -162,9 +163,19 @@ int main()
                 freopen("/dev/null", "w", stderr);
             }
 
-            // ping -c 5 google.com
+            if (!strcmp(args[argCount - 2], ">"))
+            {
+                freopen(args[argCount - 1], "w", stdout);
+                printf("\tHEROSLOG INFO:\tpipe output to file");
+                args[argCount - 2] = NULL;
+                execv(fullPath, args);
+            }
+            else
+            {
+                execv(fullPath, args);
+            }
 
-            execv(fullPath, args);
+            // ping -c 5 google.com
 
             perror("execv");
 
