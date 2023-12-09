@@ -166,7 +166,24 @@ int main()
             if (!strcmp(args[argCount - 2], ">"))
             {
                 freopen(args[argCount - 1], "w", stdout);
-                printf("\tHEROSLOG INFO:\tpipe output to file");
+                args[argCount - 2] = NULL;
+                execv(fullPath, args);
+            }
+            else if (!strcmp(args[argCount - 2], ">>"))
+            {
+                freopen(args[argCount - 1], "a", stdout);
+                args[argCount - 2] = NULL;
+                execv(fullPath, args);
+            }
+            else if (!strcmp(args[argCount - 2], "<"))
+            {
+                freopen(args[argCount - 1], "r", stdin);
+                args[argCount - 2] = NULL;
+                execv(fullPath, args);
+            }
+            else if (!strcmp(args[argCount - 2], "2>"))
+            {
+                freopen(args[argCount - 1], "w", stderr);
                 args[argCount - 2] = NULL;
                 execv(fullPath, args);
             }
