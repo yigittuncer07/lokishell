@@ -3,10 +3,19 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <string.h>
+#include <signal.h>
 
 #define MAX_LINE 80
 
 int argCount;
+
+// Signal Handler for SIGTSTP, executed when ctrl-z is pressed
+void sighandler(int sig_num)
+{
+    // Reset handler to catch SIGTSTP next time
+    signal(SIGTSTP, sighandler);
+    printf("\n=Ctrl+Z pressed\n");
+}
 
 // Calls exit if ctrl-D is entered
 // Reads args
@@ -89,6 +98,8 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
 
 int main()
 {
+
+    signal(SIGTSTP, sighandler);
     char inputBuffer[MAX_LINE];
     short isBackroudProcess; // equals 1 if a command is followed by &
     char *args[MAX_LINE / 2 + 1];
