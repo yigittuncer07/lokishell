@@ -24,12 +24,66 @@ struct Bookmark bookmarks[MAX_BOOKMARKS];
 
 void saveBookmarksToFile()
 {
+    FILE *file = fopen(BOOKMARK_FILE, "w");
 
+    if (file == NULL)
+    {
+        fprintf(stderr, "\tHEROSHELL LOG:\tError opening bookmark file for writing.\n");
+        return;
+    }
+
+    for (int i = 0; i < bookmarkCount; i++)
+    {
+        for (int j = 0; j < bookmarks[i].argCount; j++)
+        {
+            fprintf(file, "%s ", bookmarks[i].args[j]);
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
 }
 
 void loadBookmarksFromFile()
 {
+    FILE *file = fopen(BOOKMARK_FILE, "r");
 
+    if (file == NULL)
+    {
+        fprintf(stderr, "\tHEROSHELL LOG:\tError opening bookmark file for reading.\n");
+        return;
+    }
+
+    char line[MAX_LINE];
+    int index = 0;
+
+    while (fgets(line, sizeof(line), file) != NULL && index < MAX_BOOKMARKS)
+    {
+        // Remove newline character from the end of the line
+        line[strcspn(line, "\n")] = '\0';
+
+        // Tokenize the line into arguments
+        char *token = strtok(line, " ");
+        int argIndex = 0;
+
+        // Create a new bookmark
+        struct Bookmark newBookmark;
+
+        while (token != NULL && argIndex < MAX_LINE / 2 + 1)
+        {
+            newBookmark.args[argIndex] = strdup(token);
+            argIndex++;
+            token = strtok(NULL, " ");
+        }
+
+        newBookmark.argCount = argIndex;
+        bookmarks[index] = newBookmark;
+        index++;
+    }
+
+    bookmarkCount = index;
+
+    fclose(file);
 }
 
 void removeFirstChar(char *str)
