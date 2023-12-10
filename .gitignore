@@ -1,6 +1,9 @@
 .vscode/
+/playground
 # Prerequisites
 *.d
+*.txt
+
 
 # Object files
 *.o
