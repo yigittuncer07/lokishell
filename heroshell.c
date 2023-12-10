@@ -7,6 +7,7 @@
 #include <signal.h>
 
 #define MAX_LINE 80
+#define MAX_ARGS 32
 #define MAX_BOOKMARKS 10
 #define BOOKMARK_FILE ".bookmarks.txt"
 int argCount = 0;
@@ -15,65 +16,39 @@ int bookmarkCount = 0;
 // Structure to store bookmarks
 struct Bookmark
 {
-    char *args[MAX_LINE];
+    char *args[MAX_LINE / 2 + 1];
+    int argCount;
 };
 
 struct Bookmark bookmarks[MAX_BOOKMARKS];
 
-void saveBookmarks()
+void saveBookmarksToFile()
 {
-    FILE *file = fopen(BOOKMARK_FILE, "w");
-    if (file == NULL)
-    {
-        perror("Error opening bookmarks file for writing");
-        exit(EXIT_FAILURE);
-    }
 
-    for (int i = 0; i < bookmarkCount; i++)
-    {
-        fprintf(file, "%s\n", bookmarks[i].args);
-    }
-
-    fclose(file);
 }
 
-void loadBookmarks()
+void loadBookmarksFromFile()
 {
-    FILE *file = fopen(BOOKMARK_FILE, "r");
-    if (file == NULL)
-    {
-        return;
-    }
 
-    char line[MAX_LINE];
-    while (fgets(line, sizeof(line), file) != NULL)
-    {
-        line[strcspn(line, "\n")] = '\0';
-        addBookmark(line);
-    }
-
-    fclose(file);
 }
 
-void addBookmark(char *command)
+void removeFirstChar(char *str)
 {
-    if (bookmarkCount < MAX_BOOKMARKS)
+    if (str != NULL && str[0] != '\0')
     {
-        strcpy(bookmarks[bookmarkCount].args, command);
-        bookmarkCount++;
-    }
-    else
-    {
-        printf("\tHEROSHEL LOG:\tBookmark limit reached. Unable to add more bookmarks.\n");
+        memmove(str, str + 1, strlen(str));
     }
 }
 
-void listBookmarks()
+void removeLastChar(char *str)
 {
-    printf("Bookmarks:\n");
-    for (int i = 0; i < bookmarkCount; i++)
+    if (str != NULL && str[0] != '\0')
     {
-        printf("%d \"%s\"\n", i, bookmarks[i].args);
+        size_t len = strlen(str);
+        if (len > 0)
+        {
+            str[len - 1] = '\0';
+        }
     }
 }
 
@@ -81,15 +56,25 @@ void deleteBookmark(int index)
 {
     if (index >= 0 && index < bookmarkCount)
     {
+        // Free the memory allocated for the command
+        for (int i = 0; i < bookmarks[index].argCount; i++)
+        {
+            free(bookmarks[index].args[i]);
+        }
+
+        // Shift the remaining bookmarks up in the list
         for (int i = index; i < bookmarkCount - 1; i++)
         {
-            strcpy(bookmarks[i].args, bookmarks[i + 1].args);
+            bookmarks[i] = bookmarks[i + 1];
         }
+
         bookmarkCount--;
+
+        printf("\tHEROSHELL LOG:\tBookmark deleted.\n");
     }
     else
     {
-        printf("Invalid bookmark index.\n");
+        printf("\tHEROSHELL LOG:\tInvalid bookmark index.\n");
     }
 }
 
@@ -181,24 +166,113 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
     // printf("args %d = %s\n", i, args[i]);
 } /* end of setup routine */
 
+void forkProcess(char *args[], short isBackgroundProcess)
+{
+    int status;
+    char fullPath[255];
+
+    strcpy(fullPath, "/bin/");
+    strcat(fullPath, args[0]);
+
+    int fork_pid = fork();
+    if (fork_pid == -1)
+    {
+        printf("\tHEROSLOG ERROR:\tError while creating child process!");
+        return 1;
+    }
+
+    if (fork_pid)
+    {
+        // This is the parent process
+        // printf("\tHEROSLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+        if (isBackgroundProcess)
+        {
+            // printf("\tHEROSLOG INFO:\tBackground process initiated");
+            // Should not wait and instantly prompt
+        }
+        else
+        {
+
+            if (waitpid(fork_pid, &status, 0) > 0)
+            {
+                // printf("\tHEROSLOG INFO:\tForeground process %d exited normally.\n", fork_pid);
+            }
+            else
+            {
+                printf("\tHEROSLOG INFO:\tForeground process %d did not exit normally.\n", fork_pid);
+            }
+        }
+    }
+    else
+    {
+        // This is the child process
+
+        // printf("\tHEROSLOG INFO:\tCHILD PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+
+        if (isBackgroundProcess)
+        {
+            argCount--;
+            args[argCount] = NULL;
+            // Redirect standard input, output, and error to /dev/null so output is not printed
+            freopen("/dev/null", "r", stdin);
+            freopen("/dev/null", "w", stdout);
+            freopen("/dev/null", "w", stderr);
+        }
+
+        if (!strcmp(args[argCount - 2], ">"))
+        {
+            freopen(args[argCount - 1], "w", stdout);
+            args[argCount - 2] = NULL;
+            execv(fullPath, args);
+        }
+        else if (!strcmp(args[argCount - 2], ">>"))
+        {
+            freopen(args[argCount - 1], "a", stdout);
+            args[argCount - 2] = NULL;
+            execv(fullPath, args);
+        }
+        else if (!strcmp(args[argCount - 2], "<"))
+        {
+            freopen(args[argCount - 1], "r", stdin);
+            args[argCount - 2] = NULL;
+            execv(fullPath, args);
+        }
+        else if (!strcmp(args[argCount - 2], "2>"))
+        {
+            freopen(args[argCount - 1], "w", stderr);
+            args[argCount - 2] = NULL;
+            execv(fullPath, args);
+        }
+        else
+        {
+            execv(fullPath, args);
+        }
+
+        // ping -c 5 google.com
+
+        perror("execv");
+
+        // printf("\tHEROSLOG INFO:\child process terminated .In child process\n");
+    }
+}
+
 int main()
 {
-    loadBookmarks();
+    loadBookmarksFromFile();
     signal(SIGTSTP, sighandler);
     char inputBuffer[MAX_LINE];
-    short isBackroudProcess; // equals 1 if a command is followed by &
+    short isBackgroundProcess; // equals 1 if a command is followed by &
     char *args[MAX_LINE / 2 + 1];
-    int status;
 
     while (1)
     {
-        isBackroudProcess = 0;
-        setup(inputBuffer, args, &isBackroudProcess);
+        isBackgroundProcess = 0;
+        setup(inputBuffer, args, &isBackgroundProcess);
 
         if (!strcmp(args[0], "exit"))
         {
             exit(3);
-            saveBookmarks();
+            saveBookmarksToFile();
         }
 
         // Check if the command is a bookmark command
@@ -209,12 +283,25 @@ int main()
                 if (!strcmp(args[1], "-l"))
                 {
                     // List bookmarks
-                    listBookmarks();
+                    for (int i = 0; i < bookmarkCount; i++)
+                    {
+                        printf("%d \"", i);
+                        for (int j = 0; j < bookmarks[i].argCount; j++)
+                        {
+                            printf("%s ", bookmarks[i].args[j]);
+                        }
+                        printf("\"\n");
+                    }
                 }
                 else if (!strcmp(args[1], "-i") && argCount >= 3)
                 {
                     // Execute bookmark by index
                     int index = atoi(args[2]);
+                    if (!strcmp(bookmarks[index].args[bookmarks[index].argCount - 1], "&"))
+                    {
+                        isBackgroundProcess = 1;
+                    }
+                    forkProcess(bookmarks[index].args, isBackgroundProcess);
                 }
                 else if (!strcmp(args[1], "-d") && argCount >= 3)
                 {
@@ -225,8 +312,32 @@ int main()
                 }
                 else
                 {
+                    // The procedure for adding bookmarks
+                    char *bookmarkCommand[MAX_LINE / 2 + 1];
 
+                    for (int i = 1, j = 0; i < argCount; i++, j++)
+                    {
+                        bookmarkCommand[j] = strdup(args[i]);
+
+                        // Remove quotes from the first argument
+                        if (i == 1)
+                        {
+                            removeFirstChar(bookmarkCommand[j]);
+                        }
+                        if (i == argCount - 1)
+                        {
+                            removeLastChar(bookmarkCommand[j]);
+                        }
+                    }
+
+                    for (int i = 0; i < argCount - 1; i++)
+                    {
+                        bookmarks[bookmarkCount].args[i] = strdup(bookmarkCommand[i]);
+                    }
+                    bookmarks[bookmarkCount].argCount = argCount - 1;
                     bookmarkCount++;
+
+                    printf("\tHEROSHELL LOG:\tAdded bookmark\n");
                 }
             }
             else
@@ -236,94 +347,9 @@ int main()
         }
         else
         {
-
-            char fullPath[255];
-
-            strcpy(fullPath, "/bin/");
-            strcat(fullPath, args[0]);
-
-            int fork_pid = fork();
-            if (fork_pid == -1)
-            {
-                printf("\tHEROSLOG ERROR:\tError while creating child process!");
-                return 1;
-            }
-
-            if (fork_pid)
-            {
-                // This is the parent process
-                // printf("\tHEROSLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
-                if (isBackroudProcess)
-                {
-                    // printf("\tHEROSLOG INFO:\tBackground process initiated");
-                    // Should not wait and instantly prompt
-                }
-                else
-                {
-
-                    if (waitpid(fork_pid, &status, 0) > 0)
-                    {
-                        // printf("\tHEROSLOG INFO:\tForeground process %d exited normally.\n", fork_pid);
-                    }
-                    else
-                    {
-                        printf("\tHEROSLOG INFO:\tForeground process %d did not exit normally.\n", fork_pid);
-                    }
-                }
-            }
-            else
-            {
-                // This is the child process
-
-                // printf("\tHEROSLOG INFO:\tCHILD PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
-
-                if (isBackroudProcess)
-                {
-                    argCount--;
-                    args[argCount] = NULL;
-                    // Redirect standard input, output, and error to /dev/null so output is not printed
-                    freopen("/dev/null", "r", stdin);
-                    freopen("/dev/null", "w", stdout);
-                    freopen("/dev/null", "w", stderr);
-                }
-
-                if (!strcmp(args[argCount - 2], ">"))
-                {
-                    freopen(args[argCount - 1], "w", stdout);
-                    args[argCount - 2] = NULL;
-                    execv(fullPath, args);
-                }
-                else if (!strcmp(args[argCount - 2], ">>"))
-                {
-                    freopen(args[argCount - 1], "a", stdout);
-                    args[argCount - 2] = NULL;
-                    execv(fullPath, args);
-                }
-                else if (!strcmp(args[argCount - 2], "<"))
-                {
-                    freopen(args[argCount - 1], "r", stdin);
-                    args[argCount - 2] = NULL;
-                    execv(fullPath, args);
-                }
-                else if (!strcmp(args[argCount - 2], "2>"))
-                {
-                    freopen(args[argCount - 1], "w", stderr);
-                    args[argCount - 2] = NULL;
-                    execv(fullPath, args);
-                }
-                else
-                {
-                    execv(fullPath, args);
-                }
-
-                // ping -c 5 google.com
-
-                perror("execv");
-
-                // printf("\tHEROSLOG INFO:\child process terminated .In child process\n");
-            }
+            forkProcess(args, isBackgroundProcess);
+            atexit(saveBookmarksToFile);
         }
-        atexit(saveBookmarks);
     }
     return 0;
 }
