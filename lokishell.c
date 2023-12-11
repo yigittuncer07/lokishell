@@ -6,7 +6,8 @@
 #include <string.h>
 #include <signal.h>
 
-#define MAX_LINE 80
+#define MAX_STRING 300
+#define MAX_LINE 256 //this is suposed to be 128 but i like to play with long strings
 #define MAX_ARGS 32
 #define MAX_BOOKMARKS 10
 #define BOOKMARK_FILE ".bookmarks.txt"
@@ -322,6 +323,67 @@ int main()
     {
         isBackgroundProcess = 0;
         setup(inputBuffer, args, &isBackgroundProcess);
+
+        // This part is for handling strings
+        int startOfString = 0;
+        for (int i = 1; i < argCount; i++)
+        {
+            // Check if the argument starts with "
+            if (strncmp(args[i], "\"", 1) == 0)
+            {
+                char *string = malloc(MAX_STRING); // Allocate memory
+                if (string == NULL)
+                {
+                    // Handle allocation failure
+                    exit(EXIT_FAILURE);
+                }
+
+                startOfString = i;
+
+                // Remove the opening double quote if it's not the only character
+                if (strlen(args[i]) > 1)
+                {
+                    removeFirstChar(args[i]);
+                }
+
+                // Initialize the string to an empty string
+                string[0] = '\0';
+
+                // Append the argument to the string
+                strcat(string, args[i]);
+
+                // Check if the string ends with a double quote
+                size_t len = strlen(args[i]);
+                if (len > 0 && args[i][len - 1] == '\"')
+                {
+                    removeLastChar(args[i]);
+                    strcat(string, args[i]);
+                }
+                else
+                {
+                    // Handle case where the string ends with a space or there are more arguments
+                    while (++i < argCount)
+                    {
+                        len = strlen(args[i]);
+                        if (len > 0 && args[i][len - 1] == '\"')
+                        {
+                            removeLastChar(args[i]);
+                            strcat(string, " ");
+                            strcat(string, args[i]);
+                            break;
+                        }
+                        else
+                        {
+                            strcat(string, " ");
+                            strcat(string, args[i]);
+                        }
+                    }
+                }
+                args[startOfString] = strdup(string);
+                args[startOfString + 1] = NULL;
+                free(string);
+            }
+        }
 
         if (!strcmp(args[0], "exit"))
         {
