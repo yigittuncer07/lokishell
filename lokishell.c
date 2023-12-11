@@ -28,7 +28,7 @@ void saveBookmarksToFile()
 
     if (file == NULL)
     {
-        fprintf(stderr, "\tHEROSHELL LOG:\tError opening bookmark file for writing.\n");
+        fprintf(stderr, "\tLOKISHELL LOG:\tError opening bookmark file for writing.\n");
         return;
     }
 
@@ -50,7 +50,7 @@ void loadBookmarksFromFile()
 
     if (file == NULL)
     {
-        fprintf(stderr, "\tHEROSHELL LOG:\tError opening bookmark file for reading.\n");
+        fprintf(stderr, "\tLOKISHELL LOG:\tError opening bookmark file for reading.\n");
         return;
     }
 
@@ -124,11 +124,11 @@ void deleteBookmark(int index)
 
         bookmarkCount--;
 
-        printf("\tHEROSHELL LOG:\tBookmark deleted.\n");
+        printf("\tLOKISHELL LOG:\tBookmark deleted.\n");
     }
     else
     {
-        printf("\tHEROSHELL LOG:\tInvalid bookmark index.\n");
+        printf("\tLOKISHELL LOG:\tInvalid bookmark index.\n");
     }
 }
 
@@ -152,7 +152,7 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
 
     // Use ANSI escape code to set text color to green
     printf("\033[0;32m"); // 0;32 represents green
-    printf("heroshell: ");
+    printf("lokishell: ");
     printf("\033[0m"); // Resets color
     fflush(stdout);
 
@@ -231,17 +231,17 @@ void forkProcess(char *args[], short isBackgroundProcess)
     int fork_pid = fork();
     if (fork_pid == -1)
     {
-        printf("\tHEROSLOG ERROR:\tError while creating child process!");
+        printf("\tLOKISLOG ERROR:\tError while creating child process!");
         return 1;
     }
 
     if (fork_pid)
     {
         // This is the parent process
-        // printf("\tHEROSLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+        // printf("\tLOKISLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
         if (isBackgroundProcess)
         {
-            // printf("\tHEROSLOG INFO:\tBackground process initiated");
+            // printf("\tLOKISLOG INFO:\tBackground process initiated");
             // Should not wait and instantly prompt
         }
         else
@@ -249,11 +249,11 @@ void forkProcess(char *args[], short isBackgroundProcess)
 
             if (waitpid(fork_pid, &status, 0) > 0)
             {
-                // printf("\tHEROSLOG INFO:\tForeground process %d exited normally.\n", fork_pid);
+                // printf("\tLOKISLOG INFO:\tForeground process %d exited normally.\n", fork_pid);
             }
             else
             {
-                printf("\tHEROSLOG INFO:\tForeground process %d did not exit normally.\n", fork_pid);
+                printf("\tLOKISLOG INFO:\tForeground process %d did not exit normally.\n", fork_pid);
             }
         }
     }
@@ -261,7 +261,7 @@ void forkProcess(char *args[], short isBackgroundProcess)
     {
         // This is the child process
 
-        // printf("\tHEROSLOG INFO:\tCHILD PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
+        // printf("\tLOKISLOG INFO:\tCHILD PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
 
         if (isBackgroundProcess)
         {
@@ -306,7 +306,7 @@ void forkProcess(char *args[], short isBackgroundProcess)
 
         perror("execv");
 
-        // printf("\tHEROSLOG INFO:\child process terminated .In child process\n");
+        // printf("\tLOKISLOG INFO:\child process terminated .In child process\n");
     }
 }
 
@@ -391,7 +391,7 @@ int main()
                     bookmarks[bookmarkCount].argCount = argCount - 1;
                     bookmarkCount++;
 
-                    printf("\tHEROSHELL LOG:\tAdded bookmark\n");
+                    printf("\tLOKISHELL LOG:\tAdded bookmark\n");
                 }
             }
             else
