@@ -8,7 +8,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-
 #define MAX_STRING 300
 #define MAX_LINE 256 // this is suposed to be 128 but i like to play with long strings
 #define MAX_ARGS 32
@@ -26,57 +25,69 @@ struct Bookmark
 
 struct Bookmark bookmarks[MAX_BOOKMARKS];
 
-
-void searchFiles(char *searchString, char *currentPath, int recursive) {
+void searchFiles(char *searchString, char *currentPath, int recursive)
+{
     DIR *dir;
     struct dirent *entry;
     struct stat fileStat;
 
-    if ((dir = opendir(currentPath)) == NULL) {
+    if ((dir = opendir(currentPath)) == NULL)
+    {
         perror("opendir");
         return;
     }
 
-    while ((entry = readdir(dir)) != NULL) {
+    while ((entry = readdir(dir)) != NULL)
+    {
         char filePath[MAX_LINE];
         snprintf(filePath, sizeof(filePath), "%s/%s", currentPath, entry->d_name);
 
-        if (stat(filePath, &fileStat) < 0) {
+        if (stat(filePath, &fileStat) < 0)
+        {
             perror("stat");
             continue;
         }
 
-        if (S_ISDIR(fileStat.st_mode)) {
-            // Skip "." and ".." directories
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+        if (S_ISDIR(fileStat.st_mode))
+        {
+
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            {
                 continue;
             }
 
-            if (recursive) {
-                // Recursively search subdirectories
+            if (recursive)
+            {
+
                 searchFiles(searchString, filePath, recursive);
             }
-        } else {
-            // Check if the file format is supported
+        }
+        else
+        {
+
             const char *supportedFormats[] = {".c", ".C", ".h", ".H"};
             const char *fileExtension = strrchr(entry->d_name, '.');
 
-            if (fileExtension != NULL && strcmp(fileExtension, ".") != 0) {
+            if (fileExtension != NULL && strcmp(fileExtension, ".") != 0)
+            {
                 int formatSupported = 0;
-                for (size_t i = 0; i < sizeof(supportedFormats) / sizeof(supportedFormats[0]); i++) {
-                    if (strcmp(fileExtension, supportedFormats[i]) == 0) {
+                for (size_t i = 0; i < sizeof(supportedFormats) / sizeof(supportedFormats[0]); i++)
+                {
+                    if (strcmp(fileExtension, supportedFormats[i]) == 0)
+                    {
                         formatSupported = 1;
                     }
                 }
 
-                if (!formatSupported) {
+                if (!formatSupported)
+                {
                     continue;
                 }
             }
 
-            // Search the file for the given string
             FILE *file = fopen(filePath, "r");
-            if (file == NULL) {
+            if (file == NULL)
+            {
                 perror("fopen");
                 continue;
             }
@@ -84,11 +95,12 @@ void searchFiles(char *searchString, char *currentPath, int recursive) {
             char line[MAX_LINE];
             int lineNumber = 0;
 
-            while (fgets(line, sizeof(line), file) != NULL) {
+            while (fgets(line, sizeof(line), file) != NULL)
+            {
                 lineNumber++;
 
-                // Check if the line contains the search string
-                if (strstr(line, searchString) != NULL) {
+                if (strstr(line, searchString) != NULL)
+                {
                     printf("%d: %s -> %s", lineNumber, filePath, line);
                 }
             }
@@ -99,8 +111,6 @@ void searchFiles(char *searchString, char *currentPath, int recursive) {
 
     closedir(dir);
 }
-
-
 
 void saveBookmarksToFile()
 {
@@ -392,8 +402,6 @@ void forkProcess(char *args[], short isBackgroundProcess)
 int main()
 {
 
-
-
     loadBookmarksFromFile();
     signal(SIGTSTP, sighandler);
     char inputBuffer[MAX_LINE];
@@ -542,8 +550,6 @@ int main()
             {
                 printf("Invalid bookmark command. Usage: bookmark [options] <command>\n");
             }
-
-            
         }
         else
         {
@@ -551,26 +557,33 @@ int main()
             atexit(saveBookmarksToFile);
         }
 
-        if (!strcmp(args[0], "search")) {
-            if (argCount >= 2) {
+        if (!strcmp(args[0], "search"))
+        {
+            if (argCount >= 2)
+            {
                 int recursive = 0;
                 const char *searchString = args[1];
 
-                if (argCount >= 3 && !strcmp(args[1], "-r")) {
+                if (argCount >= 3 && !strcmp(args[1], "-r"))
+                {
                     recursive = 1;
                     searchString = args[2];
                 }
 
-                char currentPath[MAX_LINE];
-                if (getcwd(currentPath, sizeof(currentPath)) == NULL) {
+                char currentPath[1000];
+                if (getcwd(currentPath, sizeof(currentPath)) == NULL)
+                {
                     perror("getcwd");
-                    return 1;
                 }
 
                 searchFiles(searchString, currentPath, recursive);
-            } else {
+            }
+            else
+            {
                 printf("Invalid search command. Usage: search [-r] <search_string>\n");
             }
+        }
     }
     return 0;
-}}
+
+}
