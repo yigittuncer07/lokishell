@@ -7,7 +7,7 @@
 #include <signal.h>
 
 #define MAX_STRING 300
-#define MAX_LINE 256 //this is suposed to be 128 but i like to play with long strings
+#define MAX_LINE 256 // this is suposed to be 128 but i like to play with long strings
 #define MAX_ARGS 32
 #define MAX_BOOKMARKS 10
 #define BOOKMARK_FILE ".bookmarks.txt"
@@ -141,8 +141,7 @@ void sighandler(int sig_num)
     printf("\n=Ctrl+Z pressed\n");
 }
 
-// Calls exit if ctrl-D is entered
-// Reads args
+// Calls exit if ctrl-D is entered and reads args
 void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
 {
 
@@ -385,8 +384,9 @@ int main()
             }
         }
 
-        if (!strcmp(args[0], "exit"))
+        if (!strcmp(args[0], "exit") || !strcmp(args[0], "killoki"))
         {
+            printf("\nshell exited\n");
             exit(3);
             saveBookmarksToFile();
         }
