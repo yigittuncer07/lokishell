@@ -5,6 +5,9 @@
 #include <sys/types.h>
 #include <string.h>
 #include <signal.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
 
 #define MAX_STRING 300
 #define MAX_LINE 256 // this is suposed to be 128 but i like to play with long strings
@@ -22,6 +25,83 @@ struct Bookmark
 };
 
 struct Bookmark bookmarks[MAX_BOOKMARKS];
+
+
+void searchFiles(const char *searchString, const char *currentPath, int recursive) {
+    DIR *dir;
+    struct dirent *entry;
+    struct stat fileStat;
+
+    if ((dir = opendir(currentPath)) == NULL) {
+        perror("opendir");
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        char filePath[MAX_LINE];
+        snprintf(filePath, sizeof(filePath), "%s/%s", currentPath, entry->d_name);
+
+        if (stat(filePath, &fileStat) < 0) {
+            perror("stat");
+            continue;
+        }
+
+        if (S_ISDIR(fileStat.st_mode)) {
+            // Skip "." and ".." directories
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+
+            if (recursive) {
+                // Recursively search subdirectories
+                searchFiles(searchString, filePath, recursive);
+            }
+        } else {
+            // Check if the file format is supported
+            const char *supportedFormats[] = {".c", ".C", ".h", ".H"};
+            const char *fileExtension = strrchr(entry->d_name, '.');
+
+            if (fileExtension != NULL && strcmp(fileExtension, ".") != 0) {
+                int formatSupported = 0;
+                for (size_t i = 0; i < sizeof(supportedFormats) / sizeof(supportedFormats[0]); i++) {
+                    if (strcmp(fileExtension, supportedFormats[i]) == 0) {
+                        formatSupported = 1;
+                        break;
+                    }
+                }
+
+                if (!formatSupported) {
+                    continue;
+                }
+            }
+
+            // Search the file for the given string
+            FILE *file = fopen(filePath, "r");
+            if (file == NULL) {
+                perror("fopen");
+                continue;
+            }
+
+            char line[MAX_LINE];
+            int lineNumber = 0;
+
+            while (fgets(line, sizeof(line), file) != NULL) {
+                lineNumber++;
+
+                // Check if the line contains the search string
+                if (strstr(line, searchString) != NULL) {
+                    printf("%d: %s -> %s", lineNumber, filePath, line);
+                }
+            }
+
+            fclose(file);
+        }
+    }
+
+    closedir(dir);
+}
+
+
 
 void saveBookmarksToFile()
 {
@@ -312,7 +392,11 @@ void forkProcess(char *args[], short isBackgroundProcess)
 
 int main()
 {
+
+
+
     loadBookmarksFromFile();
+    searchFiles("input","/mnt/c/Users/hasan/Desktop/lokishell",1);
     signal(SIGTSTP, sighandler);
     char inputBuffer[MAX_LINE];
     short isBackgroundProcess; // equals 1 if a command is followed by &
