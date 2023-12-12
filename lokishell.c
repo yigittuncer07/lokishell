@@ -27,7 +27,7 @@ struct Bookmark
 struct Bookmark bookmarks[MAX_BOOKMARKS];
 
 
-void searchFiles(const char *searchString, const char *currentPath, int recursive) {
+void searchFiles(char *searchString, char *currentPath, int recursive) {
     DIR *dir;
     struct dirent *entry;
     struct stat fileStat;
@@ -66,7 +66,6 @@ void searchFiles(const char *searchString, const char *currentPath, int recursiv
                 for (size_t i = 0; i < sizeof(supportedFormats) / sizeof(supportedFormats[0]); i++) {
                     if (strcmp(fileExtension, supportedFormats[i]) == 0) {
                         formatSupported = 1;
-                        break;
                     }
                 }
 
@@ -396,7 +395,6 @@ int main()
 
 
     loadBookmarksFromFile();
-    searchFiles("input","/mnt/c/Users/hasan/Desktop/lokishell",1);
     signal(SIGTSTP, sighandler);
     char inputBuffer[MAX_LINE];
     short isBackgroundProcess; // equals 1 if a command is followed by &
@@ -544,12 +542,35 @@ int main()
             {
                 printf("Invalid bookmark command. Usage: bookmark [options] <command>\n");
             }
+
+            
         }
         else
         {
             forkProcess(args, isBackgroundProcess);
             atexit(saveBookmarksToFile);
         }
+
+        if (!strcmp(args[0], "search")) {
+            if (argCount >= 2) {
+                int recursive = 0;
+                const char *searchString = args[1];
+
+                if (argCount >= 3 && !strcmp(args[1], "-r")) {
+                    recursive = 1;
+                    searchString = args[2];
+                }
+
+                char currentPath[MAX_LINE];
+                if (getcwd(currentPath, sizeof(currentPath)) == NULL) {
+                    perror("getcwd");
+                    return 1;
+                }
+
+                searchFiles(searchString, currentPath, recursive);
+            } else {
+                printf("Invalid search command. Usage: search [-r] <search_string>\n");
+            }
     }
     return 0;
-}
+}}
