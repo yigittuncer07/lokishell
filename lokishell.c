@@ -134,6 +134,20 @@ void saveBookmarksToFile()
     fclose(file);
 }
 
+void callKilloki()
+{
+    printf("\033[1;31m");
+    printf("  ░░███╗░░██████╗░██╗░░██╗██╗██╗░░░░░██╗░░░░░░█████╗░██╗░░██╗██╗ \n");
+    printf("  ░████║░░╚════██╗██║░██╔╝██║██║░░░░░██║░░░░░██╔══██╗██║░██╔╝██║  \n");
+    printf("  ██╔██║░░░█████╔╝█████═╝░██║██║░░░░░██║░░░░░██║░░██║█████═╝░██║ \n");
+    printf("  ╚═╝██║░░░╚═══██╗██╔═██╗░██║██║░░░░░██║░░░░░██║░░██║██╔═██╗░██║ \n");
+    printf("  ███████╗██████╔╝██║░╚██╗██║███████╗███████╗╚█████╔╝██║░╚██╗██║  \n");
+    printf("  ╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝ ╚════╝ ╚═╝  ╚═╝╚═╝  \n");
+
+}
+
+
+
 void loadBookmarksFromFile()
 {
     FILE *file = fopen(BOOKMARK_FILE, "r");
@@ -240,7 +254,7 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
     int ct = 0; // index of where to place the next parameter into args[]
 
     // Use ANSI escape code to set text color to green
-    printf("\033[0;32m"); // 0;32 represents green
+    printf("\033[1;31m");
     printf("lokishell: ");
     printf("\033[0m"); // Resets color
     fflush(stdout);
@@ -583,7 +597,11 @@ int main()
                 printf("Invalid search command. Usage: search [-r] <search_string>\n");
             }
         }
+        if (!strcmp(args[0], "13killoki"))
+        {
+            callKilloki();
+        }
+    
     }
     return 0;
-
 }
