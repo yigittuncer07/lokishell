@@ -323,12 +323,45 @@ void forkProcess(char *args[], short isBackgroundProcess)
     int status;
     char fullPath[255];
 
+    // Check if the command already contains a '/'
+    // if (strchr(args[0], '/') != NULL)
+    // {
+    //     strcpy(fullPath, args[0]);
+    // }
+    // else
+    // {
+    //     // Get the PATH variable
+    //     char *path = getenv("PATH");
+    //     if (path == NULL)
+    //     {
+    //         fprintf(stderr, "\tLOKISHELL LOG:\tPATH variable not set.\n");
+    //         return;
+    //     }
+
+    //     // Tokenize the PATH variable
+    //     char *dir = strtok(path, ":");
+    //     while (dir != NULL)
+    //     {
+    //         // Concatenate directory and command to form full path
+    //         snprintf(fullPath, sizeof(fullPath), "%s/%s", dir, args[0]);
+
+    //         // Check if the file is executable
+    //         if (access(fullPath, X_OK) == 0)
+    //         {
+    //             break;
+    //         }
+
+    //         dir = strtok(NULL, ":");
+    //     }
+    // }
+
     strcpy(fullPath, "/bin/");
     strcat(fullPath, args[0]);
 
     int fork_pid = fork();
     if (fork_pid == -1)
     {
+        perror("fork");
         printf("\tLOKISLOG ERROR:\tError while creating child process!");
         return 1;
     }
@@ -370,35 +403,45 @@ void forkProcess(char *args[], short isBackgroundProcess)
             freopen("/dev/null", "w", stdout);
             freopen("/dev/null", "w", stderr);
         }
-
-        if (!strcmp(args[argCount - 2], ">"))
+        if (argCount > 2)
         {
-            freopen(args[argCount - 1], "w", stdout);
-            args[argCount - 2] = NULL;
-            execv(fullPath, args);
-        }
-        else if (!strcmp(args[argCount - 2], ">>"))
-        {
-            freopen(args[argCount - 1], "a", stdout);
-            args[argCount - 2] = NULL;
-            execv(fullPath, args);
-        }
-        else if (!strcmp(args[argCount - 2], "<"))
-        {
-            freopen(args[argCount - 1], "r", stdin);
-            args[argCount - 2] = NULL;
-            execv(fullPath, args);
-        }
-        else if (!strcmp(args[argCount - 2], "2>"))
-        {
-            freopen(args[argCount - 1], "w", stderr);
-            args[argCount - 2] = NULL;
-            execv(fullPath, args);
+            if (!strcmp(args[argCount - 2], ">"))
+            {
+                freopen(args[argCount - 1], "w", stdout);
+                args[argCount - 2] = NULL;
+                execv(fullPath, args);
+            }
+            else if (!strcmp(args[argCount - 2], ">>"))
+            {
+                freopen(args[argCount - 1], "a", stdout);
+                args[argCount - 2] = NULL;
+                execv(fullPath, args);
+            }
+            else if (!strcmp(args[argCount - 2], "<"))
+            {
+                freopen(args[argCount - 1], "r", stdin);
+                args[argCount - 2] = NULL;
+                execv(fullPath, args);
+            }
+            else if (!strcmp(args[argCount - 2], "2>"))
+            {
+                freopen(args[argCount - 1], "w", stderr);
+                args[argCount - 2] = NULL;
+                execv(fullPath, args);
+            }
+            else
+            {
+                execv(fullPath, args);
+                perror("execv");
+                fflush(stdout);
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
             execv(fullPath, args);
             perror("execv");
+            fflush(stdout);
             exit(EXIT_FAILURE);
         }
 
@@ -422,70 +465,9 @@ int main()
         isBackgroundProcess = 0;
         setup(inputBuffer, args, &isBackgroundProcess);
 
-        This part is for handling strings
-        int startOfString = 0;
-        for (int i = 1; i < argCount; i++)
-        {
-            // Check if the argument starts with "
-            if (strncmp(args[i], "\"", 1) == 0)
-            {
-                char *string = malloc(MAX_STRING); // Allocate memory
-                if (string == NULL)
-                {
-                    // Handle allocation failure
-                    exit(EXIT_FAILURE);
-                }
-
-                startOfString = i;
-
-                // Remove the opening double quote if it's not the only character
-                if (strlen(args[i]) > 1)
-                {
-                    removeFirstChar(args[i]);
-                }
-
-                // Initialize the string to an empty string
-                string[0] = '\0';
-
-                // Append the argument to the string
-                strcat(string, args[i]);
-
-                // Check if the string ends with a double quote
-                size_t len = strlen(args[i]);
-                if (len > 0 && args[i][len - 1] == '\"')
-                {
-                    removeLastChar(args[i]);
-                    strcat(string, args[i]);
-                }
-                else
-                {
-                    // Handle case where the string ends with a space or there are more arguments
-                    while (++i < argCount)
-                    {
-                        len = strlen(args[i]);
-                        if (len > 0 && args[i][len - 1] == '\"')
-                        {
-                            removeLastChar(args[i]);
-                            strcat(string, " ");
-                            strcat(string, args[i]);
-                            break;
-                        }
-                        else
-                        {
-                            strcat(string, " ");
-                            strcat(string, args[i]);
-                        }
-                    }
-                }
-                args[startOfString] = strdup(string);
-                args[startOfString + 1] = NULL;
-                free(string);
-            }
-        }
-
         if (!strcmp(args[0], "exit") || !strcmp(args[0], "killoki"))
         {
-            printf("\lokishell exited\n");
+            printf("\nlokishell exited\n");
             exit(3);
             saveBookmarksToFile();
         }
