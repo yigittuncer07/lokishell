@@ -134,7 +134,7 @@ void saveBookmarksToFile()
     fclose(file);
 }
 
-void callKilloki()
+void printKilloki()
 {
     printf("\033[1;31m");
     printf("  ░░███╗░░██████╗░██╗░░██╗██╗██╗░░░░░██╗░░░░░░█████╗░██╗░░██╗██╗ \n");
@@ -143,10 +143,7 @@ void callKilloki()
     printf("  ╚═╝██║░░░╚═══██╗██╔═██╗░██║██║░░░░░██║░░░░░██║░░██║██╔═██╗░██║ \n");
     printf("  ███████╗██████╔╝██║░╚██╗██║███████╗███████╗╚█████╔╝██║░╚██╗██║  \n");
     printf("  ╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝ ╚════╝ ╚═╝  ╚═╝╚═╝  \n");
-
 }
-
-
 
 void loadBookmarksFromFile()
 {
@@ -214,13 +211,11 @@ void deleteBookmark(int index)
 {
     if (index >= 0 && index < bookmarkCount)
     {
-        // Free the memory allocated for the command
         for (int i = 0; i < bookmarks[index].argCount; i++)
         {
             free(bookmarks[index].args[i]);
         }
 
-        // Shift the remaining bookmarks up in the list
         for (int i = index; i < bookmarkCount - 1; i++)
         {
             bookmarks[i] = bookmarks[i + 1];
@@ -403,11 +398,11 @@ void forkProcess(char *args[], short isBackgroundProcess)
         else
         {
             execv(fullPath, args);
+            perror("execv");
+            exit(EXIT_FAILURE);
         }
 
         // ping -c 5 google.com
-
-        perror("execv");
 
         // printf("\tLOKISLOG INFO:\child process terminated .In child process\n");
     }
@@ -427,7 +422,7 @@ int main()
         isBackgroundProcess = 0;
         setup(inputBuffer, args, &isBackgroundProcess);
 
-        // This part is for handling strings
+        This part is for handling strings
         int startOfString = 0;
         for (int i = 1; i < argCount; i++)
         {
@@ -490,13 +485,15 @@ int main()
 
         if (!strcmp(args[0], "exit") || !strcmp(args[0], "killoki"))
         {
-            printf("\nshell exited\n");
+            printf("\lokishell exited\n");
             exit(3);
             saveBookmarksToFile();
         }
-
-        // Check if the command is a bookmark command
-        if (!strcmp(args[0], "bookmark"))
+        else if (!strcmp(args[0], "13killoki"))
+        {
+            printKilloki();
+        }
+        else if (!strcmp(args[0], "bookmark"))
         {
             if (argCount >= 2)
             {
@@ -565,13 +562,7 @@ int main()
                 printf("Invalid bookmark command. Usage: bookmark [options] <command>\n");
             }
         }
-        else
-        {
-            forkProcess(args, isBackgroundProcess);
-            atexit(saveBookmarksToFile);
-        }
-
-        if (!strcmp(args[0], "search"))
+        else if (!strcmp(args[0], "search"))
         {
             if (argCount >= 2)
             {
@@ -597,11 +588,11 @@ int main()
                 printf("Invalid search command. Usage: search [-r] <search_string>\n");
             }
         }
-        if (!strcmp(args[0], "13killoki"))
+        else
         {
-            callKilloki();
+            forkProcess(args, isBackgroundProcess);
+            // atexit(saveBookmarksToFile);
         }
-    
     }
     return 0;
 }
