@@ -1,8 +1,8 @@
 # LokiShell
 
-░█░░░█▀█░█░█░▀█▀░█▀▀░█░█░█▀▀░█░░░█░░
-░█░░░█░█░█▀▄░░█░░▀▀█░█▀█░█▀▀░█░░░█░░
-░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀
+░█░░░█▀█░█░█░▀█▀░█▀▀░█░█░█▀▀░█░░░█░░                                    
+░█░░░█░█░█▀▄░░█░░▀▀█░█▀█░█▀▀░█░░░█░░                                        
+░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀                          
 
 LokiShell is a simple Unix shell with additional features like bookmarks, I/O redirection, and background process handling.
 
