@@ -134,17 +134,6 @@ void saveBookmarksToFile()
     fclose(file);
 }
 
-void printKilloki()
-{
-    printf("\033[1;31m");
-    printf("  ░░███╗░░██████╗░██╗░░██╗██╗██╗░░░░░██╗░░░░░░█████╗░██╗░░██╗██╗ \n");
-    printf("  ░████║░░╚════██╗██║░██╔╝██║██║░░░░░██║░░░░░██╔══██╗██║░██╔╝██║  \n");
-    printf("  ██╔██║░░░█████╔╝█████═╝░██║██║░░░░░██║░░░░░██║░░██║█████═╝░██║ \n");
-    printf("  ╚═╝██║░░░╚═══██╗██╔═██╗░██║██║░░░░░██║░░░░░██║░░██║██╔═██╗░██║ \n");
-    printf("  ███████╗██████╔╝██║░╚██╗██║███████╗███████╗╚█████╔╝██║░╚██╗██║  \n");
-    printf("  ╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝ ╚════╝ ╚═╝  ╚═╝╚═╝  \n");
-}
-
 void loadBookmarksFromFile()
 {
     FILE *file = fopen(BOOKMARK_FILE, "r");
@@ -314,47 +303,12 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
     }                /* end of for */
     args[ct] = NULL; /* just in case the input line was > 80 */
     argCount = ct;
-    // for (i = 0; i <= ct; i++)
-    // printf("args %d = %s\n", i, args[i]);
-} /* end of setup routine */
+}
 
 void forkProcess(char *args[], short isBackgroundProcess)
 {
     int status;
     char fullPath[255];
-
-    // Check if the command already contains a '/'
-    // if (strchr(args[0], '/') != NULL)
-    // {
-    //     strcpy(fullPath, args[0]);
-    // }
-    // else
-    // {
-    //     // Get the PATH variable
-    //     char *path = getenv("PATH");
-    //     if (path == NULL)
-    //     {
-    //         fprintf(stderr, "\tLOKISHELL LOG:\tPATH variable not set.\n");
-    //         return;
-    //     }
-
-    //     // Tokenize the PATH variable
-    //     char *dir = strtok(path, ":");
-    //     while (dir != NULL)
-    //     {
-    //         // Concatenate directory and command to form full path
-    //         snprintf(fullPath, sizeof(fullPath), "%s/%s", dir, args[0]);
-
-    //         // Check if the file is executable
-    //         if (access(fullPath, X_OK) == 0)
-    //         {
-    //             break;
-    //         }
-
-    //         dir = strtok(NULL, ":");
-    //     }
-    // }
-
     strcpy(fullPath, "/bin/");
     strcat(fullPath, args[0]);
 
@@ -369,20 +323,9 @@ void forkProcess(char *args[], short isBackgroundProcess)
     if (fork_pid)
     {
         // This is the parent process
-        // printf("\tLOKISLOG INFO:\tPARENT PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
-        if (isBackgroundProcess)
+        if (!isBackgroundProcess)
         {
-            // printf("\tLOKISLOG INFO:\tBackground process initiated");
-            // Should not wait and instantly prompt
-        }
-        else
-        {
-
-            if (waitpid(fork_pid, &status, 0) > 0)
-            {
-                // printf("\tLOKISLOG INFO:\tForeground process %d exited normally.\n", fork_pid);
-            }
-            else
+            if (waitpid(fork_pid, &status, 0) <= 0)
             {
                 printf("\tLOKISLOG INFO:\tForeground process %d did not exit normally.\n", fork_pid);
             }
@@ -391,12 +334,9 @@ void forkProcess(char *args[], short isBackgroundProcess)
     else
     {
         // This is the child process
-
-        // printf("\tLOKISLOG INFO:\tCHILD PROCESS: fork_pid: %d PID: %d PPID: %d\n", fork_pid, getpid(), getppid());
-
         if (isBackgroundProcess)
         {
-            argCount--;
+            argCount--; // Dont count & as a argument
             args[argCount] = NULL;
             // Redirect standard input, output, and error to /dev/null so output is not printed
             freopen("/dev/null", "r", stdin);
@@ -444,10 +384,6 @@ void forkProcess(char *args[], short isBackgroundProcess)
             fflush(stdout);
             exit(EXIT_FAILURE);
         }
-
-        // ping -c 5 google.com
-
-        // printf("\tLOKISLOG INFO:\child process terminated .In child process\n");
     }
 }
 
@@ -459,6 +395,11 @@ int main()
     char inputBuffer[MAX_LINE];
     short isBackgroundProcess; // equals 1 if a command is followed by &
     char *args[MAX_LINE / 2 + 1];
+
+    // print opening text
+    printf("░█░░░█▀█░█░█░▀█▀░█▀▀░█░█░█▀▀░█░░░█░░\n");
+    printf("░█░░░█░█░█▀▄░░█░░▀▀█░█▀█░█▀▀░█░░░█░░\n");
+    printf("░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀\n");
 
     while (1)
     {
@@ -473,7 +414,13 @@ int main()
         }
         else if (!strcmp(args[0], "13killoki"))
         {
-            printKilloki();
+            printf("\033[1;31m");
+            printf("  ░░███╗░░██████╗░██╗░░██╗██╗██╗░░░░░██╗░░░░░░█████╗░██╗░░██╗██╗ \n");
+            printf("  ░████║░░╚════██╗██║░██╔╝██║██║░░░░░██║░░░░░██╔══██╗██║░██╔╝██║  \n");
+            printf("  ██╔██║░░░█████╔╝█████═╝░██║██║░░░░░██║░░░░░██║░░██║█████═╝░██║ \n");
+            printf("  ╚═╝██║░░░╚═══██╗██╔═██╗░██║██║░░░░░██║░░░░░██║░░██║██╔═██╗░██║ \n");
+            printf("  ███████╗██████╔╝██║░╚██╗██║███████╗███████╗╚█████╔╝██║░╚██╗██║  \n");
+            printf("  ╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝ ╚════╝ ╚═╝  ╚═╝╚═╝  \n");
         }
         else if (!strcmp(args[0], "bookmark"))
         {
@@ -573,7 +520,7 @@ int main()
         else
         {
             forkProcess(args, isBackgroundProcess);
-            // atexit(saveBookmarksToFile);
+            atexit(saveBookmarksToFile);
         }
     }
     return 0;
