@@ -393,7 +393,6 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
             {
                 execv(fullPath, args);
                 perror("execv");
-                fflush(stdout);
                 exit(EXIT_FAILURE);
             }
         }
@@ -401,7 +400,6 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
         {
             execv(fullPath, args);
             perror("execv");
-            fflush(stdout);
             exit(EXIT_FAILURE);
         }
     }
@@ -441,8 +439,8 @@ int main()
         if (!strcmp(args[0], "exit") || !strcmp(args[0], "killoki"))
         {
             printf("\nlokishell exited\n");
-            exit(3);
             saveBookmarksToFile();
+            exit(3);
         }
         else if (startsWithDotSlash(args[0]))
         {
@@ -490,6 +488,16 @@ int main()
                     {
                         isBackgroundProcess = true;
                     }
+                    argCount = bookmarks[index].argCount;
+
+                    // printf("index is: %d, argcount is: %d, isBackground is : %d\n", index, bookmarks[index].argCount, isBackgroundProcess);
+                    // for (int i = 0; i < bookmarks[index].argCount; i++)
+                    // {
+                    //     printf("arg%d : %s\n", i, bookmarks[index].args[i]);
+                    // }
+
+                    bookmarks[index].args[argCount] = NULL;
+
                     forkProcess(bookmarks[index].args, isBackgroundProcess, false);
                 }
                 else if (!strcmp(args[1], "-d") && argCount >= 3)
@@ -526,7 +534,7 @@ int main()
                     bookmarks[bookmarkCount].argCount = argCount - 1;
                     bookmarkCount++;
 
-                    printf("\tLOKISHELL LOG:\tAdded bookmark\n");
+                    printf("Added bookmark\n");
                 }
             }
             else
