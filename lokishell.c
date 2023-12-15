@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 
 #define MAX_STRING 300
 #define MAX_LINE 256 // this is suposed to be 128 but i like to play with long strings
@@ -24,6 +25,12 @@ struct Bookmark
 };
 
 struct Bookmark bookmarks[MAX_BOOKMARKS];
+
+bool startsWithDotSlash(const char *str)
+{
+    size_t len = strlen(str);
+    return (len >= 2 && str[0] == '.' && str[1] == '/');
+}
 
 void searchFiles(char *searchString, char *currentPath, int recursive)
 {
@@ -211,12 +218,10 @@ void deleteBookmark(int index)
         }
 
         bookmarkCount--;
-
-        printf("\tLOKISHELL LOG:\tBookmark deleted.\n");
     }
     else
     {
-        printf("\tLOKISHELL LOG:\tInvalid bookmark index.\n");
+        printf("Invalid bookmark index.\n");
     }
 }
 
@@ -229,7 +234,7 @@ void sighandler(int sig_num)
 }
 
 // Calls exit if ctrl-D is entered and reads args
-void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
+void setup(char inputBuffer[], char *args[], bool *isBackgroundProcess)
 {
 
     int length; // # of characters in the command line
@@ -296,7 +301,7 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
                 start = i;
             if (inputBuffer[i] == '&')
             {
-                *isBackgroundProcess = 1;
+                *isBackgroundProcess = true;
                 inputBuffer[i - 1] = '\0';
             }
         }            /* end of switch */
@@ -305,12 +310,27 @@ void setup(char inputBuffer[], char *args[], short *isBackgroundProcess)
     argCount = ct;
 }
 
-void forkProcess(char *args[], short isBackgroundProcess)
+void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
 {
     int status;
     char fullPath[255];
-    strcpy(fullPath, "/bin/");
-    strcat(fullPath, args[0]);
+
+    if (isLocalProcess)
+    {
+        char currentDir[1024];
+        if (getcwd(currentDir, sizeof(currentDir)) == NULL)
+        {
+            perror("getcwd");
+            exit(EXIT_FAILURE);
+        }
+        char fullPath[PATH_MAX];
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", currentDir, args[0]);
+    }
+    else
+    {
+        strcpy(fullPath, "/bin/");
+        strcat(fullPath, args[0]);
+    }
 
     int fork_pid = fork();
     if (fork_pid == -1)
@@ -390,20 +410,32 @@ void forkProcess(char *args[], short isBackgroundProcess)
 int main()
 {
 
+    char *path = getenv("PATH");
+
+    if (path != NULL)
+    {
+        // printf("PATH: %s\n\n\n", path);
+    }
+    else
+    {
+        fprintf(stderr, "PATH variable not set.\n");
+    }
+
     loadBookmarksFromFile();
     signal(SIGTSTP, sighandler);
     char inputBuffer[MAX_LINE];
-    short isBackgroundProcess; // equals 1 if a command is followed by &
+    bool isBackgroundProcess; // equals 1 if a command is followed by &
     char *args[MAX_LINE / 2 + 1];
 
     // print opening text
+    printf("\033[1;31m");
     printf("░█░░░█▀█░█░█░▀█▀░█▀▀░█░█░█▀▀░█░░░█░░\n");
     printf("░█░░░█░█░█▀▄░░█░░▀▀█░█▀█░█▀▀░█░░░█░░\n");
     printf("░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀\n");
 
     while (1)
     {
-        isBackgroundProcess = 0;
+        isBackgroundProcess = false;
         setup(inputBuffer, args, &isBackgroundProcess);
 
         if (!strcmp(args[0], "exit") || !strcmp(args[0], "killoki"))
@@ -411,6 +443,17 @@ int main()
             printf("\nlokishell exited\n");
             exit(3);
             saveBookmarksToFile();
+        }
+        else if (startsWithDotSlash(args[0]))
+        {
+            removeFirstChar(args[0]);
+            removeFirstChar(args[0]);
+            args[1] = NULL;
+            forkProcess(args, isBackgroundProcess, true);
+        }
+        else if (!strcmp(args[0], "cd"))
+        {
+            printf("not yet implemented");
         }
         else if (!strcmp(args[0], "13killoki"))
         {
@@ -445,9 +488,9 @@ int main()
                     int index = atoi(args[2]);
                     if (!strcmp(bookmarks[index].args[bookmarks[index].argCount - 1], "&"))
                     {
-                        isBackgroundProcess = 1;
+                        isBackgroundProcess = true;
                     }
-                    forkProcess(bookmarks[index].args, isBackgroundProcess);
+                    forkProcess(bookmarks[index].args, isBackgroundProcess, false);
                 }
                 else if (!strcmp(args[1], "-d") && argCount >= 3)
                 {
@@ -519,7 +562,7 @@ int main()
         }
         else
         {
-            forkProcess(args, isBackgroundProcess);
+            forkProcess(args, isBackgroundProcess, false);
             atexit(saveBookmarksToFile);
         }
     }
