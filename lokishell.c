@@ -9,6 +9,9 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #define MAX_STRING 300
 #define MAX_LINE 256 // this is suposed to be 128 but i like to play with long strings
 #define MAX_ARGS 32
@@ -16,6 +19,8 @@
 #define BOOKMARK_FILE ".bookmarks.txt"
 #define MAX_PATH_ELEMENTS 2048
 #define MAX_PATH_LENGTH 2048
+#define MAX_HISTORY 50
+
 int argCount = 0;
 int bookmarkCount = 0;
 char **pathElements;
@@ -29,6 +34,37 @@ struct Bookmark
 
 struct Bookmark bookmarks[MAX_BOOKMARKS];
 
+void addHistory(char *command)
+{
+    add_history(command);
+
+    // Limit the size of history
+    if (history_length > MAX_HISTORY)
+    {
+        HIST_ENTRY *entry = remove_history(where_history());
+        free(entry->line);
+        free(entry);
+    }
+}
+
+void loadHistory()
+{
+    read_history("history.txt"); // Load history from a file
+}
+
+void saveHistory()
+{
+    write_history("history.txt"); // Save history to a file
+}
+
+void printHistory()
+{
+    HIST_ENTRY **list = history_list();
+    for (int i = 0; list[i] != NULL; i++)
+    {
+        printf("%d: %s\n", i + 1, list[i]->line);
+    }
+}
 bool startsWithDotSlash(const char *str)
 {
     size_t len = strlen(str);
@@ -295,19 +331,21 @@ void setPathVariables()
 // Calls exit if ctrl-D is entered and reads args
 void setup(char inputBuffer[], char *args[], bool *isBackgroundProcess)
 {
-
-    int length; // # of characters in the command line
-    int i;      // loop index for accessing inputBuffer array
-    int start;  // index where beginning of next command parameter is
-    int ct = 0; // index of where to place the next parameter into args[]
-
-    // Use ANSI escape code to set text color to green
     printf("\033[1;31m");
     printf("lokishell: ");
     printf("\033[0m"); // Resets color
     fflush(stdout);
 
-    length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
+    char line[MAX_LINE];
+    int length; // # of characters in the command line
+    int i;      // loop index for accessing inputBuffer array
+    int start;  // index where beginning of next command parameter is
+    int ct = 0; // index of where to place the next parameter into args[]
+
+    *line = readline("");
+    length = strlen(line);
+    strcpy(line, inputBuffer);
+    addHistory(inputBuffer);
 
     /* 0 is the system predefined file descriptor for stdin (standard input),
        which is the user's screen in this case. inputBuffer by itself is the
@@ -484,7 +522,7 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
 
 int main()
 {
-
+    loadHistory();
     setPathVariables();
     loadBookmarksFromFile();
     signal(SIGTSTP, sighandler);
@@ -506,6 +544,7 @@ int main()
         if (!strcmp(args[0], "exit") || !strcmp(args[0], "killoki"))
         {
             saveBookmarksToFile();
+            saveHistory();
             exit(3);
         }
         else if (startsWithDotSlash(args[0]))
