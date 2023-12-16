@@ -236,6 +236,23 @@ void sighandler(int sig_num)
     printf("\n=Ctrl+Z pressed\n");
 }
 
+void changeDirectory(char *args[])
+{
+    if (args[1] == NULL)
+    {
+        // If no argument is provided, go to the home directory
+        chdir(getenv("HOME"));
+    }
+    else
+    {
+        if (chdir(args[1]) != 0)
+        {
+            perror("chdir");
+            printf("Error changing directory to %s\n", args[1]);
+        }
+    }
+}
+
 void setPathVariables()
 {
     // Get the value of the PATH environment variable
@@ -357,7 +374,7 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
     int status;
     char fullPath[MAX_LINE];
 
-    //If the process is not local, it searches the path variable 
+    // If the process is not local, it searches the path variable
     if (isLocalProcess)
     {
         char currentDir[1024];
@@ -384,7 +401,8 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
                 snprintf(fullPath, sizeof(fullPath), "%s/%s", pathElements[i], args[0]);
                 break;
             }
-            if (pathElements[i+1] == NULL) {
+            if (pathElements[i + 1] == NULL)
+            {
                 printf("error: command not found\n");
                 return;
             }
@@ -499,7 +517,7 @@ int main()
         }
         else if (!strcmp(args[0], "cd"))
         {
-            printf("not yet implemented\n");
+            changeDirectory(args);
         }
         else if (!strcmp(args[0], "13killoki"))
         {
