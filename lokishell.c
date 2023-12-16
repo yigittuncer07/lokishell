@@ -14,8 +14,11 @@
 #define MAX_ARGS 32
 #define MAX_BOOKMARKS 10
 #define BOOKMARK_FILE ".bookmarks.txt"
+#define MAX_PATH_ELEMENTS 2048
+#define MAX_PATH_LENGTH 2048
 int argCount = 0;
 int bookmarkCount = 0;
+char **pathElements;
 
 // Structure to store bookmarks
 struct Bookmark
@@ -233,6 +236,45 @@ void sighandler(int sig_num)
     printf("\n=Ctrl+Z pressed\n");
 }
 
+void setPathVariables()
+{
+    // Get the value of the PATH environment variable
+    char *path = getenv("PATH");
+
+    if (path != NULL)
+    {
+        // Allocate memory for an array of strings
+        pathElements = (char **)malloc(MAX_PATH_ELEMENTS * sizeof(char *));
+
+        if (pathElements != NULL)
+        {
+            // Copy the PATH variable to a mutable buffer
+            char pathCopy[MAX_PATH_LENGTH];
+            strncpy(pathCopy, path, sizeof(pathCopy) - 1);
+            pathCopy[sizeof(pathCopy) - 1] = '\0'; // Ensure null-termination
+
+            // Tokenize the path using ':' as the delimiter
+            char *token = strtok(pathCopy, ":");
+            int i = 0;
+
+            // Store each path element in the array
+            while (token != NULL && i < MAX_PATH_ELEMENTS)
+            {
+                pathElements[i] = strdup(token);
+                token = strtok(NULL, ":");
+                i++;
+            }
+        }
+        else
+        {
+            fprintf(stderr, "Memory allocation error.\n");
+        }
+    }
+    else
+    {
+        fprintf(stderr, "PATH variable not set.\n");
+    }
+}
 // Calls exit if ctrl-D is entered and reads args
 void setup(char inputBuffer[], char *args[], bool *isBackgroundProcess)
 {
@@ -313,8 +355,9 @@ void setup(char inputBuffer[], char *args[], bool *isBackgroundProcess)
 void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
 {
     int status;
-    char fullPath[255];
+    char fullPath[MAX_LINE];
 
+    //If the process is not local, it searches the path variable 
     if (isLocalProcess)
     {
         char currentDir[1024];
@@ -328,8 +371,24 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
     }
     else
     {
-        strcpy(fullPath, "/bin/");
-        strcat(fullPath, args[0]);
+        // Iterate through each directory in pathElements
+        for (int i = 0; pathElements[i] != NULL; ++i)
+        {
+            // Create the full path to the executable
+            char testPath[MAX_LINE];
+            snprintf(testPath, sizeof(fullPath), "%s/%s", pathElements[i], args[0]);
+
+            // Check if the file exists and is executable
+            if (access(testPath, X_OK) == 0)
+            {
+                snprintf(fullPath, sizeof(fullPath), "%s/%s", pathElements[i], args[0]);
+                break;
+            }
+            if (pathElements[i+1] == NULL) {
+                printf("error: command not found\n");
+                return;
+            }
+        }
     }
 
     int fork_pid = fork();
@@ -408,17 +467,7 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
 int main()
 {
 
-    char *path = getenv("PATH");
-
-    if (path != NULL)
-    {
-        // printf("PATH: %s\n\n\n", path);
-    }
-    else
-    {
-        fprintf(stderr, "PATH variable not set.\n");
-    }
-
+    setPathVariables();
     loadBookmarksFromFile();
     signal(SIGTSTP, sighandler);
     char inputBuffer[MAX_LINE];
@@ -438,7 +487,6 @@ int main()
 
         if (!strcmp(args[0], "exit") || !strcmp(args[0], "killoki"))
         {
-            printf("\nlokishell exited\n");
             saveBookmarksToFile();
             exit(3);
         }
@@ -451,7 +499,7 @@ int main()
         }
         else if (!strcmp(args[0], "cd"))
         {
-            printf("not yet implemented");
+            printf("not yet implemented\n");
         }
         else if (!strcmp(args[0], "13killoki"))
         {
