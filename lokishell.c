@@ -246,6 +246,8 @@ void sighandler(int sig_num)
     // Reset handler to catch SIGTSTP next time
     signal(SIGTSTP, sighandler);
     printf("\n=Ctrl+Z pressed\n");
+
+    exit 0;
 }
 
 void changeDirectory(char *args[])
