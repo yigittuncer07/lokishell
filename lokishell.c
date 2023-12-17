@@ -35,8 +35,22 @@ bool startsWithDotSlash(const char *str)
     return (len >= 2 && str[0] == '.' && str[1] == '/');
 }
 
+void removeQuotes(char *str)
+{
+    size_t len = strlen(str);
+
+    if (len >= 2 && str[0] == '"' && str[len - 1] == '"')
+    {
+        memmove(str, str + 1, len - 2);
+        str[len - 2] = '\0';
+    }
+}
+
+
 void searchFiles(char *searchString, char *currentPath, int recursive)
 {
+    removeQuotes(searchString);
+
     DIR *dir;
     struct dirent *entry;
     struct stat fileStat;
