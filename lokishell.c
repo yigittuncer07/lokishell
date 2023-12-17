@@ -432,7 +432,7 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
     int size = 0; 
     while(args[++size] != NULL);
 
-    for (int i = 0; i < size; i++) {
+    for (int i = 1; i < size; i++) {
         removeQuote(args[i]);
     }
 
