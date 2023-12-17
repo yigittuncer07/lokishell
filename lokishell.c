@@ -19,6 +19,7 @@
 int argCount = 0;
 int bookmarkCount = 0;
 char **pathElements;
+pid_t foregroundProcess = 0;  // holds the foreground process pid
 
 // Structure to store bookmarks
 struct Bookmark
@@ -241,13 +242,13 @@ void deleteBookmark(int index)
 }
 
 // Signal Handler for SIGTSTP, executed when ctrl-z is pressed
-void sighandler(int sig_num)
+void sighandler(int sig_num, pid_t foregroundProcess)
 {
     // Reset handler to catch SIGTSTP next time
     signal(SIGTSTP, sighandler);
     printf("\n=Ctrl+Z pressed\n");
-    exit(0);
-}
+    kill(foregroundProcess, SIGSTOP);
+ }
 
 void changeDirectory(char *args[])
 {
@@ -446,6 +447,7 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
         // This is the child process
         if (isBackgroundProcess)
         {
+            foregroundProcess = getpid();
             argCount--; // Dont count & as a argument
             args[argCount] = NULL;
             // Redirect standard input, output, and error to /dev/null so output is not printed
