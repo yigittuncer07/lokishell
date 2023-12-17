@@ -34,8 +34,7 @@ bool startsWithDotSlash(const char *str)
     size_t len = strlen(str);
     return (len >= 2 && str[0] == '.' && str[1] == '/');
 }
-
-void searchFiles(char *searchString, char *currentPath, int recursive)
+void searchFiles(char *searchString, char *currentPath, bool recursive)
 {
     DIR *dir;
     struct dirent *entry;
@@ -610,12 +609,12 @@ int main()
         {
             if (argCount >= 2)
             {
-                int recursive = 0;
+                bool recursive = false;
                 const char *searchString = args[1];
 
                 if (argCount >= 3 && !strcmp(args[1], "-r"))
                 {
-                    recursive = 1;
+                    recursive = true;
                     searchString = args[2];
                 }
 
