@@ -36,7 +36,7 @@ bool startsWithDotSlash(const char *str)
     return (len >= 2 && str[0] == '.' && str[1] == '/');
 }
 
-void removeQuotes(char *str)
+void checkQuotes(char *str)
 {
     size_t len = strlen(str);
 
@@ -65,7 +65,7 @@ void removeBeforeDoubleSlash(char *filePath) {
 
 void searchFiles(char *searchString, char *currentPath, int recursive)
 {
-    removeQuotes(searchString);
+    checkQuotes(searchString);
 
 
 
@@ -260,13 +260,19 @@ void deleteBookmark(int index)
     }
 }
 
-// Signal Handler for SIGTSTP, executed when ctrl-z is pressed
+// Signal Handler for SIGTSTP, executed when ctrl-z is pressedF
 void sighandler(int sig_num, pid_t foregroundProcess)
 {
     // Reset handler to catch SIGTSTP next time
-    signal(SIGTSTP, sighandler);
     printf("\n=Ctrl+Z pressed\n");
-    kill(foregroundProcess, SIGSTOP);
+    if (foregroundProcess == -1) {
+        perror("tcgetpgrp");
+    }
+
+    // Send SIGSTOP to the foreground process group
+    if (kill(-foregroundProcess, SIGSTOP) == -1) {
+        perror("kill");
+    }
  }
 
 void changeDirectory(char *args[])
@@ -402,10 +408,33 @@ void setup(char inputBuffer[], char *args[], bool *isBackgroundProcess)
     argCount = ct;
 }
 
+
+
+void removeQuote(char *str) {
+    int len = strlen(str);
+    int i, j;
+
+    for (i = 0, j = 0; i < len; i++) {
+        if (str[i] != '"') {
+            str[j] = str[i];
+            j++;
+        }
+    }
+
+    str[j] = '\0';
+}
+
+
+
 void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
 {
 
+    int size = 0; 
+    while(args[++size] != NULL);
 
+    for (int i = 0; i < size; i++) {
+        removeQuote(args[i]);
+    }
 
     int status;
     char fullPath[MAX_LINE];
