@@ -128,7 +128,6 @@ void saveBookmarksToFile()
 
     if (file == NULL)
     {
-        fprintf(stderr, "\tLOKISHELL LOG:\tError opening bookmark file for writing.\n");
         return;
     }
 
@@ -150,7 +149,6 @@ void loadBookmarksFromFile()
 
     if (file == NULL)
     {
-        fprintf(stderr, "\tLOKISHELL LOG:\tError opening bookmark file for reading.\n");
         return;
     }
 
