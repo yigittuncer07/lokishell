@@ -15,7 +15,7 @@
 #define MAX_BOOKMARKS 10
 #define BOOKMARK_FILE ".bookmarks.txt"
 #define MAX_PATH_ELEMENTS 2048
-#define MAX_PATH_LENGTH 2048
+#define MAX_PATH_LENGTH 4096
 int argCount = 0;
 int bookmarkCount = 0;
 char **pathElements;
@@ -380,7 +380,7 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
             perror("getcwd");
             exit(EXIT_FAILURE);
         }
-        char fullPath[PATH_MAX];
+        char fullPath[MAX_PATH_LENGTH];
         snprintf(fullPath, sizeof(fullPath), "%s/%s", currentDir, args[0]);
     }
     else
