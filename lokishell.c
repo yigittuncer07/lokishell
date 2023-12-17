@@ -47,9 +47,26 @@ void removeQuotes(char *str)
 }
 
 
+void removeBeforeDoubleSlash(char *filePath) {
+    char *doubleSlash = strstr(filePath, "//");
+
+    if (doubleSlash != NULL) {
+
+        size_t lengthToRemove = doubleSlash - filePath;
+
+        memmove(filePath, filePath + lengthToRemove, strlen(filePath) - lengthToRemove + 1);
+    }
+
+
+}
+
+
+
 void searchFiles(char *searchString, char *currentPath, int recursive)
 {
     removeQuotes(searchString);
+
+
 
     DIR *dir;
     struct dirent *entry;
@@ -64,7 +81,7 @@ void searchFiles(char *searchString, char *currentPath, int recursive)
     while ((entry = readdir(dir)) != NULL)
     {
         char filePath[MAX_LINE];
-        snprintf(filePath, sizeof(filePath), "%s/%s", currentPath, entry->d_name);
+        snprintf(filePath, sizeof(filePath), "%s//%s", currentPath, entry->d_name);
 
         if (stat(filePath, &fileStat) < 0)
         {
@@ -125,6 +142,8 @@ void searchFiles(char *searchString, char *currentPath, int recursive)
 
                 if (strstr(line, searchString) != NULL)
                 {
+                    removeBeforeDoubleSlash(filePath);
+                
                     printf("%d: %s -> %s", lineNumber, filePath, line);
                 }
             }
@@ -246,6 +265,7 @@ void sighandler(int sig_num)
     // Reset handler to catch SIGTSTP next time
     signal(SIGTSTP, sighandler);
     printf("\n=Ctrl+Z pressed\n");
+    exit(0);
 }
 
 void changeDirectory(char *args[])
@@ -383,6 +403,9 @@ void setup(char inputBuffer[], char *args[], bool *isBackgroundProcess)
 
 void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
 {
+
+
+
     int status;
     char fullPath[MAX_LINE];
 
@@ -395,7 +418,7 @@ void forkProcess(char *args[], bool isBackgroundProcess, bool isLocalProcess)
             perror("getcwd");
             exit(EXIT_FAILURE);
         }
-        char fullPath[PATH_MAX];
+        char fullPath[MAX_PATH_LENGTH];
         snprintf(fullPath, sizeof(fullPath), "%s/%s", currentDir, args[0]);
     }
     else
