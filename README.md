@@ -34,7 +34,7 @@ Use the following operators for I/O redirection:
 
 ### Background Processes
 
-Append `&` at the end of a command to run it in the background.
+Append `&` at the end of a command to run the command in the background.
 
 ## Building and Running
 
